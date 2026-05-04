@@ -17,14 +17,11 @@ class FFmpegNotFoundError(FileNotFoundError):
 def _candidate_paths(name: str) -> list[Path]:
     exe = f"{name}.exe" if os.name == "nt" else name
     candidates: list[Path] = []
-
-    # PyInstaller onedir/onefile extraction dir.
     if getattr(sys, "frozen", False):
         meipass = getattr(sys, "_MEIPASS", None)
         if meipass:
             candidates.append(Path(meipass) / "bin" / exe)
         candidates.append(Path(sys.executable).resolve().parent / "bin" / exe)
-
     repo_root = Path(__file__).resolve().parents[1]
     candidates.append(repo_root / "bin" / exe)
     return candidates
@@ -34,16 +31,12 @@ def resolve_binary(name: str) -> str:
     for p in _candidate_paths(name):
         if p.exists():
             return str(p)
-
     found = shutil.which(name)
     if found:
         return found
-
     exe = f"{name}.exe" if os.name == "nt" else name
     search_hint = "\n".join(f"- {p}" for p in _candidate_paths(name))
-    raise FFmpegNotFoundError(
-        f"Không tìm thấy {exe}. Hãy đặt file vào một trong các vị trí sau hoặc thêm vào PATH:\n{search_hint}"
-    )
+    raise FFmpegNotFoundError(f"Không tìm thấy {exe}. Thử các vị trí:\n{search_hint}")
 
 
 def safe_stem(name: str, limit: int = 64) -> str:
@@ -56,16 +49,27 @@ def safe_stem(name: str, limit: int = 64) -> str:
     return f"{cleaned[: limit - 11]}_{digest}"
 
 
-def run_cmd(args: list[str], on_log: Callable[[str], None]) -> None:
-    on_log("$ " + " ".join(shlex.quote(a) for a in args))
+def run_cmd(args: list[str], on_log: Callable[[str], None], step: str | None = None) -> None:
+    if step:
+        on_log(f"▶ {step}")
+    else:
+        on_log(f"▶ Run: {Path(args[0]).name}")
     try:
         proc = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
     except FileNotFoundError as exc:
         raise FFmpegNotFoundError(f"Không thể chạy lệnh vì thiếu binary: {args[0]}") from exc
 
     assert proc.stdout is not None
+    important_keys = ("error", "invalid", "failed", "no such", "cannot", "not found")
     for line in proc.stdout:
-        on_log(line.rstrip())
+        msg = line.rstrip()
+        if not msg:
+            continue
+        low = msg.lower()
+        if any(k in low for k in important_keys):
+            on_log(msg)
     code = proc.wait()
     if code != 0:
+        on_log("❌ Lệnh thất bại")
+        on_log("$ " + " ".join(shlex.quote(a) for a in args))
         raise RuntimeError(f"Command failed ({code}): {' '.join(args)}")

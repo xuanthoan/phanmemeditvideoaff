@@ -42,6 +42,8 @@ class Compositor:
                 "error",
                 "-i",
                 str(shuffled_video),
+                "-loop",
+                "1",
                 "-i",
                 str(image),
                 "-filter_complex",
@@ -54,7 +56,9 @@ class Compositor:
                 "medium",
                 "-crf",
                 "20",
+                "-shortest",
                 str(output_video),
             ],
             self.on_log,
+            step="Compositing video + image",
         )
