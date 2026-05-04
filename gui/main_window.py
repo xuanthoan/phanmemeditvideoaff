@@ -136,12 +136,12 @@ class MainWindow(QMainWindow):
 
     def remove_selected(self):
         selected = self.video_list.selectedItems()
-        if not selected and self.video_list.currentRow() >= 0:
-            self.video_list.takeItem(self.video_list.currentRow())
+        if selected:
+            for item in selected:
+                row = self.video_list.row(item)
+                self.video_list.takeItem(row)
             return
-        for item in selected:
-            row = self.video_list.row(item)
-            self.video_list.takeItem(row)
+        self.video_list.clear()
 
     def pick_images(self):
         path, _ = QFileDialog.getOpenFileName(self, "Chọn 1 ảnh (Cancel để chọn folder)")

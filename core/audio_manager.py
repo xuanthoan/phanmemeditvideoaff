@@ -11,10 +11,10 @@ class AudioManager:
         self.ffmpeg = resolve_binary("ffmpeg")
 
     def extract(self, video: Path, audio_out: Path) -> None:
-        run_cmd([self.ffmpeg, "-y", "-i", str(video), "-vn", "-acodec", "copy", str(audio_out)], self.on_log)
+        run_cmd([self.ffmpeg, "-y", "-hide_banner", "-loglevel", "error", "-i", str(video), "-vn", "-acodec", "copy", str(audio_out)], self.on_log)
 
     def mux(self, video: Path, audio: Path, output: Path) -> None:
         try:
-            run_cmd([self.ffmpeg, "-y", "-i", str(video), "-i", str(audio), "-c:v", "copy", "-c:a", "aac", str(output)], self.on_log)
+            run_cmd([self.ffmpeg, "-y", "-hide_banner", "-loglevel", "error", "-i", str(video), "-i", str(audio), "-c:v", "copy", "-c:a", "aac", str(output)], self.on_log)
         except RuntimeError:
-            run_cmd([self.ffmpeg, "-y", "-i", str(video), "-i", str(audio), "-c:v", "libx264", "-c:a", "aac", str(output)], self.on_log)
+            run_cmd([self.ffmpeg, "-y", "-hide_banner", "-loglevel", "error", "-i", str(video), "-i", str(audio), "-c:v", "libx264", "-c:a", "aac", str(output)], self.on_log)
